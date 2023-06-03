@@ -1,7 +1,8 @@
 #include "stack.h"
+#define MAX_LENGTH 100
 
-static char OPERATORS[] = "+-*/";
-static int PRECEDENCE[] = { 1, 1, 2, 2 }; //연산자 우선순위
+static char OPERATORS[] = "+-*/()";
+static int PRECEDENCE[] = { 1, 1, 2, 2, -1, -1 }; //연산자 우선순위
 
 Stack operand_stack;
 Stack operator_stack; //char들이 저장된다
@@ -16,10 +17,12 @@ char *convert(char *infix);
 char* process_op(char op, char* pos);
 
 int main() {
-	char expr[] = "2 - 10 / 5 * 6 + 4";
-	char *expr_conv;
+	char infix[MAX_LENGTH];
+	read_line(stdin, infix, MAX_LENGTH);
 	
-	expr_conv = convert(expr);
+	printf(" %s := ", infix);
+	char *postfix = convert(infix);
+	printf("%d\n", eval(postfix));
 	//int answer = eval(expr);
 
 	//printf("%d", answer);
@@ -36,7 +39,6 @@ char *convert(char *infix) {
 	char *pos = postfix; //어디에 작성해야 할지 위치를 저장하는 pos
 
 	char *token = strtok(infix, " ");
-
 	while (token != NULL) {
 		if (token[0] >= '0' && token[0] <= '9') { //피연산자
 			sprintf(pos, "%s ", token);
@@ -53,6 +55,10 @@ char *convert(char *infix) {
 
 	while (!is_empty(operator_stack)) {
 		char op = (char)pop(operator_stack);
+
+		if (op == '(') //마지막에 '('가 남아있으면 안됨
+			terminate("Unmatched parenthesis.");
+
 		sprintf(pos, "%c ", op);
 		pos += 2;
 	}
@@ -62,7 +68,7 @@ char *convert(char *infix) {
 }
 
 char* process_op(char op, char* pos) {
-	if (is_empty(operator_stack)) //operator_stack이 비었다면
+	if (is_empty(operator_stack) || op == '(') //operator_stack이 비었거나 다음 연산자가 '('라면
 		push(operator_stack, op);
 	else {
 		char top_op = peek(operator_stack); //top에 있는 연산자 복사해옴
@@ -72,13 +78,18 @@ char* process_op(char op, char* pos) {
 		else {
 			while (!is_empty(operator_stack) && precedence(op) <= precedence(top_op)) {
 				pop(operator_stack); //top_op랑 같기 때문에 걍 버림
+
+				if (top_op == '(') //op가 닫는 괄호라는 뜻
+					break;
+
 				sprintf(pos, "%c ", top_op);
 				pos += 2;
 
 				if (!is_empty(operator_stack))
 					top_op = (char)peek(operator_stack);
 			}
-			push(operator_stack, op);
+			if(op != ')') //닫는 괄호는 스택 push 안함
+				push(operator_stack, op);
 		}
 	}
 	return pos;

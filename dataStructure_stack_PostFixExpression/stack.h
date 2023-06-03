@@ -15,4 +15,5 @@ void push(Stack s, Item i);
 Item pop(Stack s);
 Item peek(Stack s);
 void terminate(const char *message);
+int read_line(FILE *fp, char* str, int limit);
 
